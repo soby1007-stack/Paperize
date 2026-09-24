@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -20,11 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import android.util.Log
 import com.anthonyla.paperize.R
 import com.anthonyla.paperize.core.constants.Constants
 import com.anthonyla.paperize.presentation.theme.AppSpacing
@@ -76,6 +82,36 @@ fun TimeIntervalPicker(
         lastChangeTimestamp = System.currentTimeMillis()
     }
 
+    val focusManager = LocalFocusManager.current
+    var dayFocused by remember { mutableStateOf(false) }
+    var hourFocused by remember { mutableStateOf(false) }
+    var minuteFocused by remember { mutableStateOf(false) }
+    val editing = dayFocused || hourFocused || minuteFocused || lastChangeTimestamp > 0
+
+    /**
+     * Applies the typed interval right away (skipping the debounce), shows the value that was
+     * actually saved (e.g. 1 min is raised to the 15 min minimum) and closes the keyboard.
+     */
+    fun confirm() {
+        val total = (dayValue * Constants.MINUTES_PER_DAY) + (hourValue * Constants.MINUTES_PER_HOUR) + minuteValue
+        val clamped = min(max(total, minimumMinutes), Constants.MAX_INTERVAL_MINUTES)
+        Log.d(TAG, "confirm: typed=${total}min -> saved=${clamped}min (current=${minutes}min)")
+
+        lastChangeTimestamp = 0L // cancels the pending debounced update
+
+        val d = clamped / Constants.MINUTES_PER_DAY
+        val h = (clamped % Constants.MINUTES_PER_DAY) / Constants.MINUTES_PER_HOUR
+        val m = (clamped % Constants.MINUTES_PER_DAY) % Constants.MINUTES_PER_HOUR
+        dayValue = d; hourValue = h; minuteValue = m
+        dayInput = d.toString(); hourInput = h.toString(); minuteInput = m.toString()
+
+        focusManager.clearFocus()
+        if (clamped != minutes) onMinutesChange(clamped)
+    }
+
+    val doneOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
+    val doneActions = KeyboardActions(onDone = { confirm() })
+
     androidx.compose.material3.Card(
         shape = MaterialTheme.shapes.medium,
         colors = androidx.compose.material3.CardDefaults.cardColors(
@@ -113,9 +149,12 @@ fun TimeIntervalPicker(
                         }
                     },
                     label = { Text(stringResource(R.string.days_txt)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = doneOptions,
+                    keyboardActions = doneActions,
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { dayFocused = it.isFocused },
                     textStyle = MaterialTheme.typography.bodyLarge
                 )
 
@@ -130,9 +169,12 @@ fun TimeIntervalPicker(
                         }
                     },
                     label = { Text(stringResource(R.string.hours_txt)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = doneOptions,
+                    keyboardActions = doneActions,
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { hourFocused = it.isFocused },
                     textStyle = MaterialTheme.typography.bodyLarge
                 )
 
@@ -147,23 +189,43 @@ fun TimeIntervalPicker(
                         }
                     },
                     label = { Text(stringResource(R.string.mins)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = doneOptions,
+                    keyboardActions = doneActions,
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { minuteFocused = it.isFocused },
                     textStyle = MaterialTheme.typography.bodyLarge
                 )
             }
 
-            Text(
-                text = "${stringResource(R.string.total_interval)} ${formatIntervalComposable(minutes)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${stringResource(R.string.total_interval)} ${formatIntervalComposable(minutes)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                FilledTonalButton(
+                    onClick = { confirm() },
+                    enabled = editing
+                ) {
+                    Text(
+                        text = stringResource(R.string.confirm),
+                        maxLines = 1
+                    )
+                }
+            }
         }
     }
 }
+
+private const val TAG = "TimeIntervalPicker"
 
 @Composable
 private fun formatIntervalComposable(minutes: Int): String {

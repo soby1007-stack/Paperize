@@ -2,6 +2,7 @@ package com.anthonyla.paperize.presentation.screens.wallpaper
 import com.anthonyla.paperize.core.constants.Constants
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +54,7 @@ import com.anthonyla.paperize.domain.model.ScheduleSettings
 import com.anthonyla.paperize.presentation.common.components.SettingSwitchItem
 import com.anthonyla.paperize.presentation.screens.wallpaper.components.AlbumSelectionBottomSheet
 import com.anthonyla.paperize.presentation.screens.wallpaper.components.CurrentWallpaperPreview
+import com.anthonyla.paperize.presentation.screens.wallpaper.components.FloatingWallpaperPreview
 import com.anthonyla.paperize.presentation.screens.wallpaper.components.SettingSwitch
 import com.anthonyla.paperize.presentation.screens.wallpaper.components.SettingSwitchWithSlider
 import com.anthonyla.paperize.presentation.screens.wallpaper.components.TimeIntervalPicker
@@ -136,8 +141,22 @@ fun WallpaperScreen(
         )
     }
 
-    Column(
+    // Floating mini preview: shown once the big "current wallpapers" preview is mostly scrolled
+    // out of view, so effect changes further down can be seen without scrolling back up.
+    var viewportTopY by remember { mutableFloatStateOf(0f) }
+    var previewTopY by remember { mutableFloatStateOf(Float.NaN) }
+    var previewHeight by remember { mutableFloatStateOf(0f) }
+    val previewShown = wallpaperMode == WallpaperMode.STATIC
+    val showFloatingPreview = previewShown && !previewTopY.isNaN() && previewHeight > 0f &&
+        previewTopY + previewHeight * 0.4f < viewportTopY
+
+    Box(
         modifier = modifier
+            .fillMaxSize()
+            .onGloballyPositioned { viewportTopY = it.positionInWindow().y }
+    ) {
+    Column(
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(start = AppSpacing.small, end = AppSpacing.small, bottom = AppSpacing.small),
@@ -582,7 +601,11 @@ fun WallpaperScreen(
                 homeScalingType = scheduleSettings.homeScalingType,
                 lockScalingType = scheduleSettings.lockScalingType,
                 homeEffects = scheduleSettings.homeEffects,
-                lockEffects = scheduleSettings.lockEffects
+                lockEffects = scheduleSettings.lockEffects,
+                modifier = Modifier.onGloballyPositioned {
+                    previewTopY = it.positionInWindow().y
+                    previewHeight = it.size.height.toFloat()
+                }
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = AppSpacing.small))
         }
@@ -1119,6 +1142,21 @@ fun WallpaperScreen(
                 }
             }
         }
+    }
+
+        FloatingWallpaperPreview(
+            visible = showFloatingPreview,
+            homeWallpaperUri = if (homeEnabled) homeWallpaperUri else null,
+            lockWallpaperUri = if (lockEnabled) lockWallpaperUri else null,
+            homeScalingType = scheduleSettings.homeScalingType,
+            lockScalingType = scheduleSettings.lockScalingType,
+            homeEffects = scheduleSettings.homeEffects,
+            lockEffects = scheduleSettings.lockEffects,
+            animate = appSettings.animate,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(AppSpacing.medium)
+        )
     }
 
     if (showAlbumSelectionSheet) {

@@ -12,6 +12,21 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -166,6 +181,99 @@ fun CurrentWallpaperPreview(
         }
     }
 }
+
+/**
+ * Small always-visible copy of the preview, shown while the big preview is scrolled out of view
+ * (e.g. while adjusting the effects further down), so changes can be seen without scrolling back.
+ * Tapping it folds it into a small round button (and back) so it never blocks a setting.
+ */
+@Composable
+fun FloatingWallpaperPreview(
+    visible: Boolean,
+    homeWallpaperUri: String?,
+    lockWallpaperUri: String?,
+    homeScalingType: ScalingType,
+    lockScalingType: ScalingType,
+    homeEffects: WallpaperEffects,
+    lockEffects: WallpaperEffects,
+    animate: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val configuration = LocalConfiguration.current
+    val context = LocalContext.current
+    val screenAspectRatio = remember(configuration) {
+        val w = configuration.screenWidthDp.toFloat()
+        val h = configuration.screenHeightDp.toFloat()
+        min(w, h) / max(w, h)
+    }
+    val screenWidthPx = remember(configuration) { portraitScreenWidthPx(context) }
+    var folded by rememberSaveable { mutableStateOf(false) }
+
+    AnimatedVisibility(
+        visible = visible && (lockWallpaperUri != null || homeWallpaperUri != null),
+        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+        modifier = modifier
+    ) {
+        if (folded) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { folded = false }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.Image,
+                        contentDescription = stringResource(R.string.current_wallpapers),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        } else {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 6.dp,
+                modifier = Modifier.clickable { folded = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (lockWallpaperUri != null) {
+                        WallpaperPreviewBox(
+                            wallpaperUri = lockWallpaperUri,
+                            aspectRatio = screenAspectRatio,
+                            screenWidthPx = screenWidthPx,
+                            scalingType = lockScalingType,
+                            effects = lockEffects,
+                            contentDescription = stringResource(R.string.content_desc_current_lock_wallpaper),
+                            animate = animate,
+                            modifier = Modifier.width(FLOATING_PREVIEW_WIDTH)
+                        )
+                    }
+                    if (homeWallpaperUri != null) {
+                        WallpaperPreviewBox(
+                            wallpaperUri = homeWallpaperUri,
+                            aspectRatio = screenAspectRatio,
+                            screenWidthPx = screenWidthPx,
+                            scalingType = homeScalingType,
+                            effects = homeEffects,
+                            contentDescription = stringResource(R.string.content_desc_current_home_wallpaper),
+                            animate = animate,
+                            modifier = Modifier.width(FLOATING_PREVIEW_WIDTH)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val FLOATING_PREVIEW_WIDTH = 72.dp
 
 /**
  * A single wallpaper preview. Shows a placeholder background until [wallpaperUri] is non-null,
