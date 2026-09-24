@@ -120,7 +120,7 @@
   <string name="wallpaper_changer">배경화면 자동 변경</string>
   <string name="wallpaper_changer_description">앨범은 그대로 두고 예약된 변경만 일시정지하거나 다시 시작합니다.</string>
   <string name="horizontal_wallpaper_scrolling">가로 스크롤</string>
-  <string name="horizontal_wallpaper_scrolling_description">채우기로 설정된 넓은 배경화면이 홈 화면 페이지를 넘길 때 함께 움직입니다. 잠금화면 배경화면은 가운데에 고정됩니다.</string>
+  <string name="horizontal_wallpaper_scrolling_description">넓은 배경화면이 홈 화면 페이지를 따라 움직입니다. 잠금화면은 고정됩니다.</string>
   <string name="disabled">사용 안 함</string>
   <string name="lock_album_label">잠금화면 앨범</string>
   <string name="home_album_label">홈 화면 앨범</string>
