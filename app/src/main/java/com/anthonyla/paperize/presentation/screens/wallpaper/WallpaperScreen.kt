@@ -578,7 +578,11 @@ fun WallpaperScreen(
             CurrentWallpaperPreview(
                 homeWallpaperUri = homeWallpaperUri,
                 lockWallpaperUri = lockWallpaperUri,
-                animate = appSettings.animate
+                animate = appSettings.animate,
+                homeScalingType = scheduleSettings.homeScalingType,
+                lockScalingType = scheduleSettings.lockScalingType,
+                homeEffects = scheduleSettings.homeEffects,
+                lockEffects = scheduleSettings.lockEffects
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = AppSpacing.small))
         }
