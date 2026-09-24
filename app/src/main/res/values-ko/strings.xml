@@ -118,7 +118,7 @@
   <!-- UI Labels and Status -->
   <string name="enabled">사용 중</string>
   <string name="wallpaper_changer">배경화면 자동 변경</string>
-  <string name="wallpaper_changer_description">앨범은 그대로 두고 예약된 변경만 일시정지하거나 다시 시작합니다.</string>
+  <string name="wallpaper_changer_description">켜면 앨범 사진으로 배경화면이 자동으로 바뀝니다. 꺼도 앨범 선택은 유지됩니다.</string>
   <string name="horizontal_wallpaper_scrolling">가로 스크롤</string>
   <string name="horizontal_wallpaper_scrolling_description">넓은 배경화면이 홈 화면 페이지를 따라 움직입니다. 잠금화면은 고정됩니다.</string>
   <string name="disabled">사용 안 함</string>
