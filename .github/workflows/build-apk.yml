@@ -1,0 +1,137 @@
+# .github/workflows/build-apk.yml
+# Paperize 포크용 디버그 APK 빌드
+# - 수동 실행(Actions 탭 > Run workflow) 또는 master 푸시 시 자동 빌드
+# - 결과 APK: Releases의 "latest-build" (폰에서 바로 다운로드) + Actions 아티팩트
+# - 실패 시: 빌드 로그 + Gradle 리포트를 아티팩트로 업로드
+
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'metadata/**'
+
+permissions:
+  contents: write   # latest-build 릴리스 생성용
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      # 러너는 매번 새 debug.keystore를 만들어서, 고정 키가 없으면
+      # 새 빌드를 기존 설치 위에 덮어쓸 수 없음(서명 불일치).
+      - name: Restore fixed debug keystore
+        shell: bash
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > ~/.android/debug.keystore
+            keytool -list -keystore ~/.android/debug.keystore -storepass android | head -n 5
+            echo "✅ 고정 디버그 키 사용"
+          else
+            echo "::warning::DEBUG_KEYSTORE_BASE64 secret이 없어요. 빌드마다 서명이 달라져 업데이트 설치가 안 됩니다."
+          fi
+
+      - name: Environment info (디버그용)
+        shell: bash
+        run: |
+          echo "commit: $GITHUB_SHA"
+          java -version 2>&1
+          chmod +x gradlew
+          ./gradlew --version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" 2>/dev/null || echo "(platforms 없음 - AGP가 자동 설치 시도)"
+          ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
+          df -h . | tail -n 1
+          free -h | head -n 2
+
+      - name: Build debug APK
+        shell: bash   # pipefail 포함 → 빌드 실패가 tee에 묻히지 않음
+        run: |
+          ./gradlew assembleDebug --stacktrace --warning-mode all 2>&1 | tee build.log
+
+      - name: Locate APK
+        id: apk
+        shell: bash
+        run: |
+          APK=$(find app/build/outputs/apk -name '*.apk' | head -n 1)
+          if [ -z "$APK" ]; then
+            echo "::error::APK를 찾지 못했어요. 출력 폴더:"
+            find app/build/outputs -maxdepth 4 || true
+            exit 1
+          fi
+          OUT="paperize-debug-${GITHUB_SHA::7}.apk"
+          cp "$APK" "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          ls -lh "$OUT"
+          echo "### ✅ 빌드 성공: \`$OUT\` ($(du -h "$OUT" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paperize-debug-apk
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 14
+
+      # 폰에서 아티팩트(zip) 받기가 불편해서, 릴리스에도 올려둠
+      - name: Publish to "latest-build" release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest-build --cleanup-tag -y 2>/dev/null || true
+          gh release create latest-build "${{ steps.apk.outputs.path }}" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Latest build (${GITHUB_SHA::7})" \
+            --notes "자동 빌드된 디버그 APK · commit ${GITHUB_SHA}"
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure-logs
+          path: |
+            build.log
+            app/build/reports/
+            build/reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Failure summary
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "### ❌ 빌드 실패"
+            echo "마지막 로그 60줄:"
+            echo '```'
+            tail -n 60 build.log 2>/dev/null || echo "(build.log 없음 - 빌드 전 단계에서 실패)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
