@@ -7,6 +7,7 @@ import android.util.Log
 import com.anthonyla.paperize.core.ScreenType
 import com.anthonyla.paperize.core.constants.Constants
 import com.anthonyla.paperize.domain.repository.SettingsRepository
+import com.anthonyla.paperize.service.screenoff.ScreenOffWatcher
 import com.anthonyla.paperize.service.worker.WallpaperScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -121,6 +122,14 @@ class BootReceiver : BroadcastReceiver() {
                         wallpaperScheduler.cancelAllWallpaperChanges()
                         Log.d(TAG, "Wallpaper changer disabled, not scheduling")
                     }
+
+                    // Static-mode "change lock screen on screen off" watcher
+                    ScreenOffWatcher.sync(
+                        context,
+                        settings,
+                        settingsRepository.getWallpaperMode(),
+                        "boot"
+                    )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error rescheduling wallpaper changes", e)
                 } finally {

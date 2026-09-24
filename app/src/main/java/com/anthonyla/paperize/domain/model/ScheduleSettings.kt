@@ -25,7 +25,9 @@ data class ScheduleSettings(
     val liveAlbumId: String? = null,
     val liveScalingType: ScalingType = ScalingType.FILL,
     val liveEffects: WallpaperEffects = WallpaperEffects.none(),
-    val adaptiveBrightness: Boolean = false
+    val adaptiveBrightness: Boolean = false,
+    /** Static mode only: advance the lock-screen wallpaper every time the screen turns off. */
+    val lockChangeOnScreenOff: Boolean = false
 ) {
     /**
      * Validate interval values

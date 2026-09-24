@@ -167,7 +167,8 @@ class PreferencesManager @Inject constructor(
                 enableParallax = prefs[booleanPreferencesKey(PreferenceKeys.LIVE_ENABLE_PARALLAX)] ?: false,
                 parallaxIntensity = prefs[intPreferencesKey(PreferenceKeys.LIVE_PARALLAX_INTENSITY)] ?: Constants.DEFAULT_PARALLAX_INTENSITY
             ),
-            adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false
+            adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false,
+            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false
         )
     }
 
@@ -231,7 +232,8 @@ class PreferencesManager @Inject constructor(
                 enableParallax = prefs[booleanPreferencesKey(PreferenceKeys.LIVE_ENABLE_PARALLAX)] ?: false,
                 parallaxIntensity = prefs[intPreferencesKey(PreferenceKeys.LIVE_PARALLAX_INTENSITY)] ?: Constants.DEFAULT_PARALLAX_INTENSITY
             ),
-            adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false
+            adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false,
+            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false
         )
     }
 
@@ -307,6 +309,7 @@ class PreferencesManager @Inject constructor(
 
             // Adaptive brightness
             prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] = settings.adaptiveBrightness
+            prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] = settings.lockChangeOnScreenOff
         }
     }
 
@@ -531,6 +534,7 @@ class PreferencesManager @Inject constructor(
 
             // Clear adaptive brightness
             prefs.remove(booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS))
+            prefs.remove(booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF))
         }
     }
 

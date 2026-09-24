@@ -73,6 +73,16 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Static mode: watches for screen off to change the lock screen wallpaper -->
+        <service
+            android:name=".service.screenoff.ScreenOffWatcherService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Changes the lock screen wallpaper each time the screen turns off" />
+        </service>
+
         <!-- Broadcast Receivers -->
         <receiver
             android:name=".service.alarm.BootReceiver"

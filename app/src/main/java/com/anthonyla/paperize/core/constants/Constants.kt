@@ -192,6 +192,7 @@ object PreferenceKeys {
     const val LIVE_GRAYSCALE = "live_grayscale"
     const val LIVE_ENABLE_DOUBLE_TAP = "live_enable_double_tap"
     const val LIVE_ENABLE_CHANGE_ON_SCREEN_OFF = "live_enable_change_on_screen_off"
+    const val LOCK_CHANGE_ON_SCREEN_OFF = "lock_change_on_screen_off"
     const val LIVE_ENABLE_PARALLAX = "live_enable_parallax"
     const val LIVE_PARALLAX_INTENSITY = "live_parallax_intensity"
 

@@ -216,4 +216,15 @@
   <string name="individual_wallpaper_static_only">개별 배경화면을 설정하려면 정적 모드로 전환하세요.</string>
   <string name="change_next_wallpaper_shortcut">다음 배경화면으로 변경</string>
 
+
+  <!-- Static mode: screen-off lock screen change -->
+  <string name="lock_change_on_screen_off">화면 꺼질 때 잠금화면 변경</string>
+  <string name="lock_change_on_screen_off_description">화면이 꺼질 때마다 다음 사진으로 변경 (상시 알림 표시)</string>
+  <string name="screen_off_channel_name">화면 꺼짐 감지</string>
+  <string name="screen_off_notification_title">화면 꺼질 때 잠금화면 변경 중</string>
+  <string name="screen_off_status_waiting">화면 꺼짐 대기 중</string>
+  <string name="screen_off_status_ok">마지막 변경 %1$s (%2$dms)</string>
+  <string name="screen_off_status_failed">마지막 변경 실패: %1$s</string>
+  <string name="screen_off_error_title">잠금화면 변경 실패</string>
+
 </resources>

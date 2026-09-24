@@ -3,14 +3,17 @@ package com.anthonyla.paperize.service.worker
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.anthonyla.paperize.core.EmptyAlbumException
 import com.anthonyla.paperize.core.Result as PaperizeResult
 import com.anthonyla.paperize.core.ScreenType
 import com.anthonyla.paperize.core.constants.Constants
+import com.anthonyla.paperize.core.util.causeChain
 import com.anthonyla.paperize.core.util.setBitmapChecked
 import com.anthonyla.paperize.domain.model.PreparedWallpaper
 import com.anthonyla.paperize.domain.model.ScheduleSettings
@@ -20,6 +23,7 @@ import com.anthonyla.paperize.domain.usecase.ReapplyEffectsUseCase
 import com.anthonyla.paperize.service.WallpaperChangeLock
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withLock
 
 /**
@@ -36,23 +40,32 @@ class WallpaperChangeWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
+        val startedAt = SystemClock.elapsedRealtime()
+        // One-shot triggers (e.g. screen off) must not retry later with backoff:
+        // a late change would be surprising, and the failure is reported instead.
+        val noRetry = inputData.getBoolean(KEY_NO_RETRY, false)
         return try {
             val screenType = inputData.getString(Constants.EXTRA_SCREEN_TYPE)
                 ?.let(ScreenType::fromString)
                 ?: ScreenType.HOME
 
-            Log.d(TAG, "Starting wallpaper change for $screenType")
+            Log.d(TAG, "Starting wallpaper change for $screenType (attempt=$runAttemptCount, noRetry=$noRetry)")
             wallpaperChangeLock.mutex.withLock {
                 changeWallpaper(screenType)
             }
-            Log.d(TAG, "Wallpaper change completed successfully for $screenType")
-            Result.success()
+            val elapsed = SystemClock.elapsedRealtime() - startedAt
+            Log.d(TAG, "Wallpaper change completed successfully for $screenType in ${elapsed}ms")
+            Result.success(workDataOf(KEY_DURATION_MS to elapsed))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error changing wallpaper", e)
-            if (runAttemptCount < Constants.MAX_WORK_RETRY_ATTEMPTS) {
+            val elapsed = SystemClock.elapsedRealtime() - startedAt
+            val chain = e.causeChain()
+            Log.e(TAG, "Error changing wallpaper after ${elapsed}ms -> $chain", e)
+            if (!noRetry && runAttemptCount < Constants.MAX_WORK_RETRY_ATTEMPTS) {
                 Result.retry()
             } else {
-                Result.failure()
+                Result.failure(workDataOf(KEY_ERROR to chain, KEY_DURATION_MS to elapsed))
             }
         }
     }
@@ -264,7 +277,16 @@ class WallpaperChangeWorker @AssistedInject constructor(
     private fun asException(throwable: Throwable): Exception =
         throwable as? Exception ?: RuntimeException(throwable)
 
-    private companion object {
-        const val TAG = "WallpaperChangeWorker"
+    companion object {
+        private const val TAG = "WallpaperChangeWorker"
+
+        /** Input: do not retry on failure (report instead). */
+        const val KEY_NO_RETRY = "no_retry"
+
+        /** Output: time spent changing the wallpaper, in milliseconds. */
+        const val KEY_DURATION_MS = "duration_ms"
+
+        /** Output (failure only): exception with its full cause chain. */
+        const val KEY_ERROR = "error"
     }
 }

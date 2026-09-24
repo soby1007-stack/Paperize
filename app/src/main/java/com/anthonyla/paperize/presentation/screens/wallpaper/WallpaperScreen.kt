@@ -691,6 +691,18 @@ fun WallpaperScreen(
                         updateSettingsImmediate(scheduleSettings.copy(shuffleEnabled = enabled))
                     }
                 )
+
+                // Static mode: change the lock screen every time the screen turns off
+                if (wallpaperMode == WallpaperMode.STATIC && lockEnabled) {
+                    SettingSwitch(
+                        title = R.string.lock_change_on_screen_off,
+                        description = R.string.lock_change_on_screen_off_description,
+                        checked = scheduleSettings.lockChangeOnScreenOff,
+                        onCheckedChange = { enabled ->
+                            updateSettingsImmediate(scheduleSettings.copy(lockChangeOnScreenOff = enabled))
+                        }
+                    )
+                }
             }
         }
 
