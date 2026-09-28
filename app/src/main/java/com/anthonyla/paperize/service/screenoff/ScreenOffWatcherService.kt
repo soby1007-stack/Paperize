@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -74,6 +75,9 @@ class ScreenOffWatcherService : Service() {
     private var triggerCount = 0
     private var skippedCount = 0
     @Volatile private var statusText: String? = null
+
+    /** User-selected minimum gap between changes; updated live from settings. */
+    @Volatile private var minGapMs = Constants.DEFAULT_SCREEN_OFF_MIN_GAP_SECONDS * 1000L
 
     private val screenOffReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -141,6 +145,16 @@ class ScreenOffWatcherService : Service() {
     private fun observeSettingsIfNeeded() {
         if (settingsJob != null) return
         settingsJob = scope.launch {
+            launch {
+                settingsRepository.getScheduleSettingsFlow()
+                    .map { it.lockScreenOffMinGapSeconds.coerceAtLeast(0) * 1000L }
+                    .distinctUntilChanged()
+                    .catch { e -> Log.e(TAG, "gap setting flow failed -> ${e.causeChain()}", e) }
+                    .collect { gap ->
+                        minGapMs = gap
+                        Log.d(TAG, "min gap between changes = ${gap}ms")
+                    }
+            }
             combine(
                 settingsRepository.getScheduleSettingsFlow(),
                 settingsRepository.getWallpaperModeFlow()
@@ -161,9 +175,10 @@ class ScreenOffWatcherService : Service() {
     private fun onScreenOff() {
         val now = SystemClock.elapsedRealtime()
         val sinceLast = now - lastTriggerAt
-        if (lastTriggerAt != 0L && sinceLast < MIN_GAP_MS) {
+        val gap = minGapMs
+        if (lastTriggerAt != 0L && gap > 0 && sinceLast < gap) {
             skippedCount++
-            Log.d(TAG, "[3/4 trigger] screen off ignored: ${sinceLast}ms since last change (< ${MIN_GAP_MS}ms), skipped=$skippedCount")
+            Log.d(TAG, "[3/4 trigger] screen off ignored: ${sinceLast}ms since last change (< ${gap}ms), skipped=$skippedCount")
             return
         }
         lastTriggerAt = now
@@ -303,9 +318,6 @@ class ScreenOffWatcherService : Service() {
         private const val ERROR_NOTIFICATION_ID = 1002
         private const val WORK_NAME = "screen_off_lock_change"
         private const val WORK_TAG = "screen_off"
-
-        /** Ignore screen-off events closer together than this (e.g. pocket toggles). */
-        private const val MIN_GAP_MS = 15_000L
 
         /** How long to wait for the worker before giving up on reporting its result. */
         private const val RESULT_TIMEOUT_MS = 120_000L

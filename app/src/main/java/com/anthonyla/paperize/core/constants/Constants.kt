@@ -15,6 +15,10 @@ object Constants {
     const val NOTIFICATION_CHANNEL_ID = "paperize_channel"
     const val NOTIFICATION_ID = 1
 
+    /** Choices for "minimum time between screen-off changes", in seconds. */
+    val SCREEN_OFF_MIN_GAP_OPTIONS_SECONDS = listOf(0, 5, 15, 60)
+    const val DEFAULT_SCREEN_OFF_MIN_GAP_SECONDS = 15
+
     // Services
     const val ACTION_CHANGE_WALLPAPER = "com.anthonyla.paperize.ACTION_CHANGE_WALLPAPER"
     const val ACTION_APPLY_SPECIFIC_WALLPAPER =
@@ -193,6 +197,7 @@ object PreferenceKeys {
     const val LIVE_ENABLE_DOUBLE_TAP = "live_enable_double_tap"
     const val LIVE_ENABLE_CHANGE_ON_SCREEN_OFF = "live_enable_change_on_screen_off"
     const val LOCK_CHANGE_ON_SCREEN_OFF = "lock_change_on_screen_off"
+    const val LOCK_SCREEN_OFF_MIN_GAP_SECONDS = "lock_screen_off_min_gap_seconds"
     const val LIVE_ENABLE_PARALLAX = "live_enable_parallax"
     const val LIVE_PARALLAX_INTENSITY = "live_parallax_intensity"
 

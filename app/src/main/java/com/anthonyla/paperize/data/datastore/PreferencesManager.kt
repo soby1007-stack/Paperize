@@ -168,7 +168,9 @@ class PreferencesManager @Inject constructor(
                 parallaxIntensity = prefs[intPreferencesKey(PreferenceKeys.LIVE_PARALLAX_INTENSITY)] ?: Constants.DEFAULT_PARALLAX_INTENSITY
             ),
             adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false,
-            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false
+            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false,
+            lockScreenOffMinGapSeconds = prefs[intPreferencesKey(PreferenceKeys.LOCK_SCREEN_OFF_MIN_GAP_SECONDS)]
+                ?: Constants.DEFAULT_SCREEN_OFF_MIN_GAP_SECONDS
         )
     }
 
@@ -233,7 +235,9 @@ class PreferencesManager @Inject constructor(
                 parallaxIntensity = prefs[intPreferencesKey(PreferenceKeys.LIVE_PARALLAX_INTENSITY)] ?: Constants.DEFAULT_PARALLAX_INTENSITY
             ),
             adaptiveBrightness = prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] ?: false,
-            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false
+            lockChangeOnScreenOff = prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] ?: false,
+            lockScreenOffMinGapSeconds = prefs[intPreferencesKey(PreferenceKeys.LOCK_SCREEN_OFF_MIN_GAP_SECONDS)]
+                ?: Constants.DEFAULT_SCREEN_OFF_MIN_GAP_SECONDS
         )
     }
 
@@ -310,6 +314,7 @@ class PreferencesManager @Inject constructor(
             // Adaptive brightness
             prefs[booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS)] = settings.adaptiveBrightness
             prefs[booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF)] = settings.lockChangeOnScreenOff
+            prefs[intPreferencesKey(PreferenceKeys.LOCK_SCREEN_OFF_MIN_GAP_SECONDS)] = settings.lockScreenOffMinGapSeconds
         }
     }
 
@@ -535,6 +540,7 @@ class PreferencesManager @Inject constructor(
             // Clear adaptive brightness
             prefs.remove(booleanPreferencesKey(PreferenceKeys.ADAPTIVE_BRIGHTNESS))
             prefs.remove(booleanPreferencesKey(PreferenceKeys.LOCK_CHANGE_ON_SCREEN_OFF))
+            prefs.remove(intPreferencesKey(PreferenceKeys.LOCK_SCREEN_OFF_MIN_GAP_SECONDS))
         }
     }
 

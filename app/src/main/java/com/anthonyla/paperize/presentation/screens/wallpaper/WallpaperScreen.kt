@@ -729,6 +729,18 @@ fun WallpaperScreen(
                             updateSettingsImmediate(scheduleSettings.copy(lockChangeOnScreenOff = enabled))
                         }
                     )
+
+                    // Minimum time before the next screen-off change (only relevant when enabled)
+                    if (scheduleSettings.lockChangeOnScreenOff) {
+                        ScreenOffMinGapSelector(
+                            selectedSeconds = scheduleSettings.lockScreenOffMinGapSeconds,
+                            onSelect = { seconds ->
+                                updateSettingsImmediate(
+                                    scheduleSettings.copy(lockScreenOffMinGapSeconds = seconds)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -1285,5 +1297,52 @@ fun WallpaperScreen(
                 }
             }
         )
+    }
+}
+
+/**
+ * Lets the user pick how long to wait before the lock screen may change again on screen off.
+ * Short gaps change on nearly every screen off; longer gaps avoid repeated changes when the
+ * screen flickers on/off (e.g. in a pocket).
+ */
+@Composable
+private fun ScreenOffMinGapSelector(
+    selectedSeconds: Int,
+    onSelect: (Int) -> Unit
+) {
+    val options = Constants.SCREEN_OFF_MIN_GAP_OPTIONS_SECONDS
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppSpacing.medium),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.small)
+    ) {
+        Text(
+            text = stringResource(R.string.screen_off_min_gap_title),
+            style = MaterialTheme.typography.titleSmall
+        )
+        Text(
+            text = stringResource(R.string.screen_off_min_gap_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            options.forEachIndexed { index, seconds ->
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                    onClick = { onSelect(seconds) },
+                    selected = seconds == selectedSeconds
+                ) {
+                    Text(
+                        text = when {
+                            seconds == 0 -> stringResource(R.string.screen_off_min_gap_none)
+                            seconds % 60 == 0 -> stringResource(R.string.screen_off_min_gap_minutes, seconds / 60)
+                            else -> stringResource(R.string.screen_off_min_gap_seconds, seconds)
+                        },
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }

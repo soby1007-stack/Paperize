@@ -27,7 +27,9 @@ data class ScheduleSettings(
     val liveEffects: WallpaperEffects = WallpaperEffects.none(),
     val adaptiveBrightness: Boolean = false,
     /** Static mode only: advance the lock-screen wallpaper every time the screen turns off. */
-    val lockChangeOnScreenOff: Boolean = false
+    val lockChangeOnScreenOff: Boolean = false,
+    /** Static mode: screen-off events closer together than this are ignored (0 = change every time). */
+    val lockScreenOffMinGapSeconds: Int = Constants.DEFAULT_SCREEN_OFF_MIN_GAP_SECONDS
 ) {
     /**
      * Validate interval values
